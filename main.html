@@ -1,0 +1,66 @@
+<div>Hệ thống tính tiền trái cây tự động</div>
+<div id="webcam-container"></div>
+<div id="label-container"></div>
+<button id="start-button">Start Processing</button>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<script type="text/javascript">
+    const URL = "https://raw.githubusercontent.com/thangdomanh/DoAn/main/mymodel/";
+    let model, webcam, labelContainer, maxPredictions;
+    let processing = false;
+
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        const flip = true;
+        webcam = new tmImage.Webcam(200, 200, flip);
+        await webcam.setup();
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        labelContainer = document.getElementById("label-container");
+
+        // Gắn sự kiện click cho nút "Start Processing"
+        document.getElementById("start-button").addEventListener("click", startProcessing);
+    }
+
+    async function loop() {
+        webcam.update();
+        if (processing) {
+            await predict();
+        }
+        window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+        const predictions = await model.predictTopK(webcam.canvas, 1);
+
+        if (predictions[0].probability >= 0.90) {
+            labelContainer.innerText = predictions[0].className;
+        } else {
+            labelContainer.innerText = "nothing";
+        }
+    }
+
+    // Hàm bắt đầu xử lý khi nút "Start Processing" được nhấn
+    function startProcessing() {
+        processing = true;
+
+        // Xử lý 20 hình ảnh
+        for (let i = 0; i < 20; i++) {
+            // Gọi hàm predict để thực hiện dự đoán
+            predict();
+        }
+
+        // Tắt chế độ xử lý sau khi hoàn thành
+        processing = false;
+    }
+
+    // Gọi hàm init mà không cần nút "Start"
+    init();
+</script>
