@@ -14,10 +14,13 @@ const priceRef = ref(database, 'DonGia/')
 const FruitPaymentSystem = () => {
 
     const URL = "https://raw.githubusercontent.com/thangdomanh/DoAn/main/mymodel/";
-    let model, webcam, labelContainer, maxPredictions, price, fruitWeight, total;
+    let model, webcam, labelContainer, maxPredictions, fruitImage, price, fruitWeight, total;
     let processing = false;
     const [fruitprice, setPrice] = useState(0)
     const [weight, setWeight] = useState(0)
+    // Thêm useState để quản lý đường dẫn và alt của ảnh
+    const [fruitImageSrc, setFruitImageSrc] = useState('');
+    const [fruitImageAlt, setFruitImageAlt] = useState('');
 
     const webcamContainerRef = useRef();
 
@@ -44,6 +47,7 @@ const FruitPaymentSystem = () => {
             price = document.getElementById('fruit-price')
             fruitWeight = document.getElementById('fruit-weight')
             total = document.getElementById('total')
+            fruitImage = document.getElementById('fruit-image')
 
             document.getElementById("start-button").addEventListener("click", startProcessing);
         };
@@ -67,6 +71,10 @@ const FruitPaymentSystem = () => {
             labelContainer.innerText = `${fruitName}`;
             console.log(predictions[0]);
 
+            // Cập nhật đường dẫn và alt của ảnh
+            setFruitImageSrc(`./src/assets/image/${fruitName}.jpg`);
+            setFruitImageAlt(fruitName);
+
             // Truy cập cơ sở dữ liệu Firebase để lấy giá tiền
             onValue(cartRef, (cartSnapshot) => {
                 const cartData = cartSnapshot.val();
@@ -89,8 +97,9 @@ const FruitPaymentSystem = () => {
                         setPrice(fruitPrice); // Update state
 
                         // Calculate total
-                        const totalPrice = fruitPrice * fruitWeight;
+                        const totalPrice = fruitPrice * weight;
                         console.log(`Total Price: ${totalPrice.toLocaleString()} VND`);
+                        total.innerText = `${totalPrice.toLocaleString()} VND`;
                     } else {
                         console.log(`No price found for ${fruitName}`);
                     }
@@ -102,9 +111,6 @@ const FruitPaymentSystem = () => {
             labelContainer.innerText = "nothing";
         }
     };
-
-
-
 
 
     function startProcessing() {
@@ -164,7 +170,11 @@ const FruitPaymentSystem = () => {
                         </div>
                     </div>
                     <div className='w-2/3 flex flex-row bg-white m-2 rounded-md'>
-                        <div className='w-1/3 m-2 bg-slate-200 rounded'>Image</div>
+                        <div className='w-44 h-44 m-2 rounded-full flex justify-center items-center'>
+                            <div id="fruit-image" alt="" className='h-36 w-36 border-2 border-slate-200 rounded-full flex justify-center items-center'>
+                                <img src={fruitImageSrc} alt={fruitImageAlt} className='h/2/3 w-2/3 flex justify-center items-center object-cover' />
+                            </div>
+                        </div>
                         <div className='w-2/3 flex flex-col'>
                             <div className='h-full  rounded m-2 mb-1 flex flex-col'>
                                 <div className='p-3 border-b-2 border-slate-400 m-2'>
