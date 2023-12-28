@@ -3,6 +3,7 @@ import * as tmImage from '@teachablemachine/image';
 import { db, app } from '../firebase'
 import { getDatabase, ref, onValue } from "firebase/database";
 
+
 // Get the reference of the database.
 const database = getDatabase();
 
@@ -79,8 +80,9 @@ const FruitPaymentSystem = () => {
             onValue(cartRef, (cartSnapshot) => {
                 const cartData = cartSnapshot.val();
                 if (!!cartData) {
-                    console.log('Can nang:', cartData, 'Kg');
-                    fruitWeight.innerText = `${cartData.toLocaleString()} Kg`;
+                    console.log('Can nang:', cartData, 'gram');
+                    fruitWeight.innerText = `${cartData.toLocaleString()} gram`;
+                    
                     setWeight(cartData); // Update state
                 } else {
                     console.log('Cart data not found');
@@ -97,9 +99,9 @@ const FruitPaymentSystem = () => {
                         setPrice(fruitPrice); // Update state
 
                         // Calculate total
-                        const totalPrice = fruitPrice * weight;
-                        console.log(`Total Price: ${totalPrice.toLocaleString()} VND`);
-                        total.innerText = `${totalPrice.toLocaleString()} VND`;
+                        const totalPrice = (fruitPrice/1000) * weight;
+                        //console.log(`Total Price: ${totalPrice.toLocaleString()} VND`);
+                        //total.innerText = `${totalPrice.toLocaleString()} VND`;
                     } else {
                         console.log(`No price found for ${fruitName}`);
                     }
@@ -191,7 +193,7 @@ const FruitPaymentSystem = () => {
                                     <div id='fruit-name' className='w-1/3'></div>
                                     <div id='fruit-weight' className='w-1/3'></div>
                                     <div id='fruit-price' className='w-1/3'></div>
-                                    <div id='total' className='w-1/3'>{fruitprice * weight}</div>
+                                    <div id='total' className='w-1/3'>{fruitprice * weight/1000} VND</div>
                                 </div>
 
                             </div>
