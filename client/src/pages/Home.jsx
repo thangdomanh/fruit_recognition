@@ -1,29 +1,36 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as tmImage from '@teachablemachine/image';
+import { getDatabase, ref, onValue } from 'firebase/database';
 import { db, app } from '../firebase'
-import { getDatabase, ref, onValue } from "firebase/database";
-
+import FruitModal from './modal';
+import { toast } from "react-toastify";
+import { CiShoppingCart } from "react-icons/ci";
 
 // Get the reference of the database.
-const database = getDatabase();
-
+const database = getDatabase(app);
 const cartRef = ref(database, 'CanNang/');
 const priceRef = ref(database, 'DonGia/')
 
-
+// const cartRef = ref(database, 'CanNang/');
+// const priceRef = ref(database, 'DonGia/')
 
 const FruitPaymentSystem = () => {
-
     const URL = "https://raw.githubusercontent.com/thangdomanh/DoAn/main/mymodel/";
     let model, webcam, labelContainer, maxPredictions, fruitImage, price, fruitWeight, total;
+    let webcamRef = useRef(null);
     let processing = false;
-    const [fruitprice, setPrice] = useState(0)
-    const [weight, setWeight] = useState(0)
-    // Thêm useState để quản lý đường dẫn và alt của ảnh
+
+    const [fruitprice, setPrice] = useState(0);
+    const [weight, setWeight] = useState(0);
     const [fruitImageSrc, setFruitImageSrc] = useState('');
     const [fruitImageAlt, setFruitImageAlt] = useState('');
-
+    const [openCamera, setOpenCamera] = useState(false);
+    // const [modelLoaded, setModelLoaded] = useState(false); // State để đánh dấu model đã được tải
     const webcamContainerRef = useRef();
+    const labelContainerRef = useRef(null);
+    const [modal, setModal] = useState(false);
+    const [cart, setCart] = useState([]);
+    const [cartCount, setCartCount] = useState(0);
 
     useEffect(() => {
         const init = async () => {
@@ -33,89 +40,121 @@ const FruitPaymentSystem = () => {
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
 
-            const flip = true;
-            webcam = new tmImage.Webcam(410, 410, flip);
-            await webcam.setup();
-            await webcam.play();
-            window.requestAnimationFrame(loop);
-
-            const webcamCanvas = webcam.canvas;
-            webcamCanvas.width = webcamContainerRef.current.clientWidth;
-            webcamCanvas.height = webcamContainerRef.current.clientHeight;
-
-            webcamContainerRef.current.appendChild(webcamCanvas);
             labelContainer = document.getElementById("fruit-name");
             price = document.getElementById('fruit-price')
             fruitWeight = document.getElementById('fruit-weight')
             total = document.getElementById('total')
             fruitImage = document.getElementById('fruit-image')
 
-            document.getElementById("start-button").addEventListener("click", startProcessing);
-        };
+            // setModelLoaded(true); // Đánh dấu model đã được tải
+        }
 
         init();
     }, []);
 
     const loop = async () => {
-        webcam.update();
-        if (processing) {
-            await predict();
+        if (webcamRef.current) {
+            webcamRef.current.update();
+            if (processing) {
+                await predict();
+            }
+            window.requestAnimationFrame(loop);
         }
-        window.requestAnimationFrame(loop);
+    };
+
+    const handleOpenCamera = async () => {
+        setOpenCamera(true);
+        if (webcamRef.current) {
+            await webcamRef.current.stop();
+            webcamRef.current = null;
+        }
+
+        webcamRef.current = new tmImage.Webcam(400, 400, true);
+        await webcamRef.current.setup();
+        await webcamRef.current.play();
+        webcamContainerRef.current.appendChild(webcamRef.current.canvas);
+        loop();
+    };
+
+    const handleCloseCamera = async () => {
+        setOpenCamera(false);
+        if (webcamRef.current) {
+            await webcamRef.current.stop();
+            webcamRef.current = null;
+        }
     };
 
     const predict = async () => {
-        const predictions = await model.predictTopK(webcam.canvas, 1);
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
 
-        if (predictions[0].probability >= 0.90) {
-            const fruitName = predictions[0].className;
-            labelContainer.innerText = `${fruitName}`;
-            console.log(predictions[0]);
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+        labelContainer = document.getElementById("fruit-name");
+        price = document.getElementById('fruit-price')
+        fruitWeight = document.getElementById('fruit-weight')
+        total = document.getElementById('total')
+        fruitImage = document.getElementById('fruit-image')
 
-            // Cập nhật đường dẫn và alt của ảnh
-            setFruitImageSrc(`./src/assets/image/${fruitName}.jpg`);
-            setFruitImageAlt(fruitName);
+        const prediction = await model.predict(webcamRef.current.canvas);
+        let maxPrediction = 0;
+        for (let i = 0; i < prediction.length; i++) {
+            if (prediction[i].probability > maxPrediction) {
+                maxPrediction = prediction[i].probability;
+                labelContainer.innerText = prediction[i].className;
+            }
+            if (maxPrediction >= 0.90) {
+                labelContainer.innerText = prediction[i].className;
+                // console.log('Label:', labelContainer.innerText);
 
-            // Truy cập cơ sở dữ liệu Firebase để lấy giá tiền
-            onValue(cartRef, (cartSnapshot) => {
-                const cartData = cartSnapshot.val();
-                if (!!cartData) {
-                    console.log('Can nang:', cartData, 'gram');
-                    fruitWeight.innerText = `${cartData.toLocaleString()} gram`;
-                    
-                    setWeight(cartData); // Update state
-                } else {
-                    console.log('Cart data not found');
-                }
-            });
+                setFruitImageSrc(`./src/assets/image/${labelContainer.innerText}.jpg`);
+                setFruitImageAlt(labelContainer.innerText);
 
-            onValue(priceRef, (priceSnapshot) => {
-                const priceData = priceSnapshot.val();
-                if (!!priceData) {
-                    const fruitPrice = priceData[fruitName] || null;
-                    if (fruitPrice !== null) {
-                        console.log(`Price of ${fruitName}: ${fruitPrice}`);
-                        price.innerText = `${fruitPrice.toLocaleString()} VND`;
-                        setPrice(fruitPrice); // Update state
+                // Truy cập cơ sở dữ liệu Firebase để lấy giá tiền
+                onValue(cartRef, (cartSnapshot) => {
+                    const cartData = cartSnapshot.val();
+                    if (!!cartData) {
+                        // console.log('Can nang:', cartData, 'gram');
+                        fruitWeight.innerText = `${cartData.toLocaleString()} gram`;
 
-                        // Calculate total
-                        const totalPrice = (fruitPrice/1000) * weight;
-                        //console.log(`Total Price: ${totalPrice.toLocaleString()} VND`);
-                        //total.innerText = `${totalPrice.toLocaleString()} VND`;
+                        setWeight(cartData); // Update state
                     } else {
-                        console.log(`No price found for ${fruitName}`);
+                        console.log('Cart data not found');
                     }
-                } else {
-                    console.log('Price data not found');
-                }
-            });
-        } else {
-            labelContainer.innerText = "nothing";
+                });
+
+                onValue(priceRef, (priceSnapshot) => {
+                    const priceData = priceSnapshot.val();
+                    // console.log('Price:', priceData);
+                    // console.log(priceData[labelContainer.innerText]);
+                    if (!!priceData) {
+                        const fruitPrice = priceData[labelContainer.innerText] || null;
+                        if (fruitPrice !== null) {
+                            // console.log(`Price of ${labelContainer.innerText}: ${fruitPrice}`);
+                            price.innerText = `${fruitPrice.toLocaleString()} VND`;
+                            setPrice(fruitPrice); // Update state
+
+                            // Calculate total
+                            const totalPrice = (fruitPrice / 1000) * weight;
+                            // console.log(`Total Price: ${totalPrice.toLocaleString()} VND`);
+                            total.innerText = `${totalPrice.toLocaleString()} VND`;
+                        } else {
+                            console.log(`No price found for ${labelContainer.innerText}`);
+                        }
+                    } else {
+                        console.log('Price data not found');
+                    }
+                });
+            } else {
+                labelContainer.innerText = "nothing";
+            }
         }
+        // console.log('Max Prediction:', maxPrediction);
+        // console.log('Fruit Name:', labelContainer.innerText);
     };
 
 
-    function startProcessing() {
+    const startProcessing = async () => {
         processing = true;
 
         // Đối tượng để lưu trữ số lần xuất hiện của mỗi label
@@ -124,10 +163,9 @@ const FruitPaymentSystem = () => {
         // Xử lý 20 hình ảnh
         for (let i = 0; i < 20; i++) {
             // Gọi hàm predict để thực hiện dự đoán
-            predict();
-
-            // Lấy label hiện tại
+            await predict();
             const currentLabel = labelContainer.innerText;
+            console.log('Current Label:', currentLabel);
 
             // Nếu label khác "nothing", tăng số lần xuất hiện của label đó
             if (currentLabel !== "nothing") {
@@ -148,59 +186,144 @@ const FruitPaymentSystem = () => {
 
         // Gán label xuất hiện nhiều nhất vào labelContainer
         labelContainer.innerText = mostFrequentLabel;
+        console.log('Most Frequent Label:', labelContainer.innerText);
 
         // Tắt chế độ xử lý sau khi hoàn thành
         processing = false;
-    }
+    };
+
+
+    const handleAddCart = () => {
+        console.log("Check label in handleAdd: ", labelContainer);
+        if (!labelContainer.innerText) {
+            toast.error('Vui lòng mở camera và chụp hình trước khi thêm vào giỏ hàng', {
+                position: "top-center",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            });
+            return;
+        } else {
+            console.log('Check cart: ', labelContainer.innerText, fruitprice, weight, fruitprice * weight / 1000);
+            const item = {
+                name: labelContainer.innerText,
+                price: fruitprice,
+                weight: weight,
+                total: fruitprice * weight / 1000
+            };
+            cart.push(item);
+            setCart([...cart]);
+            setCartCount(cart.length);
+
+            console.log(cart);
+            toast.success('Đã thêm vào giỏ hàng', {
+                position: "top-center",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            });
+        }
+    };
+
+
     return (
-        <div className='h-screen bg-slate-200 flex flex-col'>
-            <div className='m-2 h-screen'>
-                <div className='h-16 flex text-lg bg-white m-2 text-center justify-center items-center rounded-md font-semibold text-violet-600'>
-                    <span className='text-center my-auto'>DO AN 2</span>
-                </div>
-                <div className='h-5/6 flex flex-row'>
-                    <div className='w-1/3 bg-white rounded m-2'>
-                        <div id='webcam-container' className='h-5/6 rounded m-2'>
-                            <div className='h-full rounded' ref={webcamContainerRef}></div>
+        <div className='h-screen bg-slate-200 flex flex-row'>
+            <div className='w-1/2 bg-white rounded m-2 flex flex-col justify-around'>
+                {openCamera ? (
+                    <>
+                        <div id='webcam-container' className='h-5/6 rounded m-2 flex justify-around items-start' ref={webcamContainerRef}></div>
+                        <div className='m-2 flex flex-row justify-around items-center'>
+                            <button
+                                onClick={handleCloseCamera}
+                                className=' bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
+                            >
+                                {'Close Camera'}
+                            </button>
+                            <button
+                                onClick={startProcessing}
+                                className=' bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
+                            >
+                                {'Process Image'}
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div id='webcam-container' className='h-5/6 flex justify-center items-center text-md text-slate-400' >
+                            Bấm nút để mở camera
                         </div>
                         <div className='m-2'>
                             <button
-                                id='start-button'
-                                className='w-full bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'>
-                                Start
+                                onClick={handleOpenCamera}
+                                className='w-full bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
+                            >
+                                {'Open Camera'}
                             </button>
                         </div>
-                    </div>
-                    <div className='w-2/3 flex flex-row bg-white m-2 rounded-md'>
-                        <div className='w-44 h-44 m-2 rounded-full flex justify-center items-center'>
-                            <div id="fruit-image" alt="" className='h-36 w-36 border-2 border-slate-200 rounded-full flex justify-center items-center'>
-                                <img src={fruitImageSrc} alt={fruitImageAlt} className='h/2/3 w-2/3 flex justify-center items-center object-cover' />
-                            </div>
+                    </>
+                )}
+
+            </div>
+            <div className='w-1/2 flex flex-col bg-white m-2 rounded-md'>
+                <div className='h-12 flex justify-end m-4'>
+                    {/* <div className='flex justify-end items-center text-black bg-red-100 w-28 h-10 rounded-full'>
+                        <button
+                            onClick={() => {
+                                setModal(true);
+                            }}
+                            className='flex items-center justify-center w-full h-full bg-red-200'
+                        >
+                            <span>{cartCount}</span>
+                            <CiShoppingCart className='text-[30px] mr-2 text-gray-500' />
+                        </button>
+                    </div> */}
+                    <FruitModal
+                        modal={modal}
+                        setModal={setModal}
+                        cart={cart}
+                        cartCount={cartCount}
+                    />
+                </div>
+                <div className='w-full flex flex-row'>
+                    <div className='w-44 h-44 m-2 rounded-full flex justify-center items-center'>
+                        <div id="fruit-image" alt="" className='h-36 w-36 border-2 border-slate-200 rounded-full flex justify-center items-center'>
+                            <img src={fruitImageSrc} alt={fruitImageAlt} className='h/2/3 w-2/3 flex justify-center items-center object-cover' />
                         </div>
-                        <div className='w-2/3 flex flex-col'>
-                            <div className='h-full  rounded m-2 mb-1 flex flex-col'>
-                                <div className='p-3 border-b-2 border-slate-400 m-2'>
-                                    <span className='text-left text-lg font-semibold'>Shopping Cart</span>
-                                </div>
-                                <div className='flex flex-row text-center mb-5'>
-                                    <div className='w-1/3 text-slate-400 text-sm font-semibold uppercase'>Product Name</div>
-                                    <div className='w-1/3 text-slate-400 text-sm font-semibold uppercase'>Weight</div>
-                                    <div className='w-1/3 text-slate-400 text-sm font-semibold uppercase'>Price</div>
-                                    <div className='w-1/3 text-slate-400 text-sm font-semibold uppercase'>Total</div>
-                                </div>
-
-                                <div className='flex flex-row text-center'>
-                                    <div id='fruit-name' className='w-1/3'></div>
-                                    <div id='fruit-weight' className='w-1/3'></div>
-                                    <div id='fruit-price' className='w-1/3'></div>
-                                    <div id='total' className='w-1/3'>{fruitprice * weight/1000} VND</div>
-                                </div>
-
+                    </div>
+                    <div className='w-2/3 flex flex-col'>
+                        <div className='rounded m-2 mb-1 flex flex-col'>
+                            <div className='p-3 border-b-2 border-slate-400 m-2'>
+                                <span className='text-left text-lg font-semibold'>Product Information</span>
                             </div>
-                            <div className='m-2 mt-1'>
-                                <button className='bg-slate-100 rounded w-full p-2 hover:bg-slate-600 hover:text-white transition duration-500'>
-                                    THANH TOÁN
-                                </button>
+                            <div className='flex flex-row text-center mb-5'>
+                                <div className='w-1/3 text-slate-400 text-sm font-semibold uppercase'>Product Name</div>
+                                <div className='w-1/3 text-slate-400 text-sm font-semibold uppercase'>Weight</div>
+                                <div className='w-1/3 text-slate-400 text-sm font-semibold uppercase'>Price</div>
+                                <div className='w-1/3 text-slate-400 text-sm font-semibold uppercase'>Total</div>
+                            </div>
+
+                            <div className='flex flex-row text-center'>
+                                <label id="fruit-name" ref={labelContainerRef} className='w-1/3'></label>
+                                <div id='fruit-weight' className='w-1/3'></div>
+                                <div id='fruit-price' className='w-1/3'></div>
+                                <div id='total' className='w-1/3'>{fruitprice * weight / 1000} VND</div>
+                            </div>
+                            <div className='flex justify-end mt-3'>
+                                <div className='flex justify-end mt-3'>
+                                    <button
+                                        onClick={handleAddCart}
+                                        className='bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
+                                    >
+                                        Add to cart
+                                    </button>
+                                    {/* {cartCount} */}
+                                </div>
                             </div>
                         </div>
                     </div>
