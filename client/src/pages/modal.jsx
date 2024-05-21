@@ -2,83 +2,9 @@ import React, { useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiAlertCircle } from "react-icons/fi";
 import { CiShoppingCart } from "react-icons/ci";
-import { jsPDF } from "jspdf";
-import { toast } from "react-toastify";
 
 const FruitModal = ({ isOpen, handleCloseModal, generatePDF, cart }) => {
     const targetRef = useRef();
-
-
-
-    // const generatePDF = () => {
-    //     const doc = new jsPDF();
-    //     console.log(cartCount);
-
-    //     // Title
-    //     const titleText = "Invoice";
-    //     const titleWidth = doc.getStringUnitWidth(titleText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-    //     const centerX = (doc.internal.pageSize.width - titleWidth) / 2;
-    //     doc.setFontSize(18);
-    //     doc.text(titleText, centerX, 22);
-
-    //     // Line separator
-    //     doc.setLineWidth(0.2);
-    //     doc.line(14, 24, 196, 24);
-
-    //     // Invoice details
-    //     doc.setFontSize(12);
-    //     doc.text("Invoice Date:", 14, 30);
-
-    //     // Populate invoice details (dummy data used for demonstration)
-    //     const invoiceDetails = {
-    //         date: formatDate(currentDate),
-    //     };
-
-    //     doc.setFont("helvetica", "normal");
-    //     doc.text(invoiceDetails.date, 45, 30);
-
-    //     // Line separator
-    //     doc.setLineWidth(0.5);
-    //     doc.line(14, 35, 196, 35);
-
-    //     // Cart details
-    //     let yPosition = 44;
-    //     const xOffset = 14;
-    //     const yOffset = 6;
-
-    //     // Titles
-    //     doc.setFontSize(12);
-    //     doc.text("Product Name", xOffset, yPosition);
-    //     doc.text("Weight", xOffset + 50, yPosition);
-    //     doc.text("Price", xOffset + 80, yPosition);
-    //     doc.text("Total", xOffset + 110, yPosition);
-
-    //     yPosition += yOffset;
-
-    //     // Content
-    //     cart.forEach((item, index) => {
-    //         doc.text(item.name.toString(), xOffset, yPosition);
-    //         doc.text(item.weight.toString(), xOffset + 50, yPosition);
-    //         doc.text(item.price.toString(), xOffset + 80, yPosition);
-    //         doc.text(item.total.toString(), xOffset + 110, yPosition);
-    //         yPosition += yOffset; // Adjust spacing between rows
-    //     });
-
-    //     // Total
-    //     const total = cart.reduce((acc, item) => acc + item.total, 0);
-    //     doc.text("Total:", 80, yPosition + 10);
-    //     doc.text(total.toString(), 110, yPosition + 10);
-
-    //     // Save the PDF
-    //     doc.save("invoice.pdf");
-    //     toast.success("Invoice generated successfully!");
-    //     handleCloseModal();
-    //     cartCount(0);
-    //     // Clear cart
-    //     localStorage.removeItem("cart");
-
-    // };
-
     return (
         <AnimatePresence>
             {isOpen && (
