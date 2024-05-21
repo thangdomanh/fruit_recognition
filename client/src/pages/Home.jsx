@@ -43,14 +43,6 @@ const FruitPaymentSystem = () => {
 
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
-
-            // labelContainer = document.getElementById("fruit-name");
-            // price = document.getElementById('fruit-price')
-            // fruitWeight = document.getElementById('fruit-weight')
-            // total = document.getElementById('total')
-            // fruitImage = document.getElementById('fruit-image')
-
-            // setModelLoaded(true); // Đánh dấu model đã được tải
         }
 
         init();
@@ -125,7 +117,7 @@ const FruitPaymentSystem = () => {
                     console.log('Cart data not found');
                 }
             });
-            
+
             onValue(priceRef, (priceSnapshot) => {
                 const priceData = priceSnapshot.val();
                 if (priceData) {
@@ -134,7 +126,7 @@ const FruitPaymentSystem = () => {
                     console.log('Price:', fruitPrice, 'VND');
                     if (fruitPrice) {
                         setPrice(fruitPrice); // Update state
-            
+
                         // Calculate total
                         const totalPrice = (fruitPrice / 1000) * weight;
                         //convert totalPrice to 1,000 VND
@@ -148,7 +140,7 @@ const FruitPaymentSystem = () => {
                     console.log('Price data not found');
                 }
             });
-            
+
         } else {
             labelContainer.innerText = "nothing";
         }
@@ -168,8 +160,6 @@ const FruitPaymentSystem = () => {
 
         processing = false;
     };
-
-
 
     const handleAddCart = () => {
         console.log("Check label in handleAdd: ", fruitName);
@@ -192,9 +182,27 @@ const FruitPaymentSystem = () => {
                 weight: weight,
                 total: totalPrice,
             };
-            cart.push(item);
-            setCart([...cart]);
-            setCartCount(cart.length);
+            //check if item is already in cart
+            const found = cart.find((element) => element.name === item.name);
+            if (found) {
+                //update quantity
+                const newCart = cart.map((element) => {
+                    if (element.name === item.name) {
+                        return {
+                            ...element,
+                            weight: element.weight + item.weight,
+                            total: element.total + item.total,
+                        };
+                    }
+                    return element;
+                });
+                setCart(newCart);
+            } else {
+                setCart([...cart, item]);
+            }
+            setCartCount(cartCount + 1);
+
+
 
             console.log(cart);
             toast.success('Đã thêm vào giỏ hàng', {
@@ -213,7 +221,7 @@ const FruitPaymentSystem = () => {
             setTotalPrice(0);
             setFruitImageSrc('');
             setFruitImageAlt('');
-            
+
         }
     };
 
@@ -288,13 +296,13 @@ const FruitPaymentSystem = () => {
                         </div>
                     </div>
                     <div className='w-2/3 flex flex-col'>
-                    <button
-                    onClick={handleOpenModal}
-                    className='flex items-center justify-center w-full h-full bg-red-200'
-                >
-                    <span>{cartCount}</span>
-                    <CiShoppingCart className='text-[30px] mr-2 text-gray-500' />
-                </button>
+                        <button
+                            onClick={handleOpenModal}
+                            className='flex items-center justify-center w-full h-full bg-red-200'
+                        >
+                            <span>{cartCount}</span>
+                            <CiShoppingCart className='text-[30px] mr-2 text-gray-500' />
+                        </button>
                         <div className='rounded m-2 mb-1 flex flex-col'>
                             <div className='p-3 border-b-2 border-slate-400 m-2'>
                                 <span className='text-left text-lg font-semibold'>Product Information</span>
