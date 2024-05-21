@@ -5,6 +5,7 @@ import { db, app } from '../firebase'
 import FruitModal from './modal';
 import { toast } from "react-toastify";
 import { CiShoppingCart } from "react-icons/ci";
+import { jsPDF } from "jspdf";
 
 // Get the reference of the database.
 const database = getDatabase(app);
@@ -19,6 +20,22 @@ const FruitPaymentSystem = () => {
     let model, webcam, labelContainer, maxPredictions, fruitImage, price, fruitWeight, total;
     let webcamRef = useRef(null);
     let processing = false;
+
+    // Get current date
+    const currentDate = new Date().toLocaleDateString();
+
+    // Format dd/mm/yyyy
+    const formatDate = (date) => {
+        const d = new Date(date);
+        let month = "" + (d.getMonth() + 1);
+        let day = "" + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = "0" + month;
+        if (day.length < 2) day = "0" + day;
+
+        return [day, month, year].join("/");
+    };
 
 
     // const [modelLoaded, setModelLoaded] = useState(false); // State để đánh dấu model đã được tải
@@ -235,7 +252,85 @@ const FruitPaymentSystem = () => {
         <div className='h-screen bg-slate-200 flex flex-row'>
             <FruitModal
                 isOpen={modal}
-                handleCloseModal={() => setModal(false)}
+                handleCloseModal={() => {
+                    setModal(false);
+                }}
+                generatePDF={() => {
+
+                    const doc = new jsPDF();
+                    console.log(cartCount);
+
+                    // Title
+                    const titleText = "Invoice";
+                    const titleWidth = doc.getStringUnitWidth(titleText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+                    const centerX = (doc.internal.pageSize.width - titleWidth) / 2;
+                    doc.setFontSize(18);
+                    doc.text(titleText, centerX, 22);
+
+                    // Line separator
+                    doc.setLineWidth(0.2);
+                    doc.line(14, 24, 196, 24);
+
+                    // Invoice details
+                    doc.setFontSize(12);
+                    doc.text("Invoice Date:", 14, 30);
+
+                    // Populate invoice details (dummy data used for demonstration)
+                    const invoiceDetails = {
+                        date: formatDate(currentDate),
+                    };
+
+                    doc.setFont("helvetica", "normal");
+                    doc.text(invoiceDetails.date, 45, 30);
+
+                    // Line separator
+                    doc.setLineWidth(0.5);
+                    doc.line(14, 35, 196, 35);
+
+                    // Cart details
+                    let yPosition = 44;
+                    const xOffset = 14;
+                    const yOffset = 6;
+
+                    // Titles
+                    doc.setFontSize(12);
+                    doc.text("Product Name", xOffset, yPosition);
+                    doc.text("Weight", xOffset + 50, yPosition);
+                    doc.text("Price", xOffset + 80, yPosition);
+                    doc.text("Total", xOffset + 110, yPosition);
+
+                    yPosition += yOffset;
+
+                    // Content
+                    cart.forEach((item, index) => {
+                        doc.text(item.name.toString(), xOffset, yPosition);
+                        doc.text(item.weight.toString(), xOffset + 50, yPosition);
+                        doc.text(item.price.toString(), xOffset + 80, yPosition);
+                        doc.text(item.total.toString(), xOffset + 110, yPosition);
+                        yPosition += yOffset; // Adjust spacing between rows
+                    });
+
+                    // Total
+                    const total = cart.reduce((acc, item) => acc + item.total, 0);
+                    doc.text("Total:", 80, yPosition + 10);
+                    doc.text(total.toString(), 110, yPosition + 10);
+
+                    // Save the PDF
+                    doc.save("invoice.pdf");
+                    toast.success("Invoice generated successfully!", {
+                        position: "top-center",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                    });
+                    setModal(false);
+                    setCartCount(0);
+                    // Clear cart
+                    setCart([]);
+                }}
                 cart={cart}
             />
             <div className='w-1/2 bg-white rounded m-2 flex flex-col justify-around'>
