@@ -7,7 +7,7 @@ cred = credentials.Certificate("C:\\fruit_recognition\\client\\ttiot-6ea8c-fireb
 firebase_admin.initialize_app(cred, {"databaseURL": "https://ttiot-6ea8c-default-rtdb.firebaseio.com/"})
 
 # Define the serial port and baud rate
-serial_port = 'COM3'  # Thay đổi theo hệ điều hành của bạn (ví dụ, COMx trên Windows)
+serial_port = 'COM8'  # Thay đổi theo hệ điều hành của bạn (ví dụ, COMx trên Windows)
 baud_rate = 115200
 
 # Mở cổng serial
@@ -29,7 +29,7 @@ try:
         # Chuyển dữ liệu từ serial thành số nguyên và cập nhật vào Realtime Database
         try:
             can_nang_value = int(line)
-            ref.update({"CanNang": can_nang_value})
+            ref.update({"CanNang": can_nang_value + 1258})
             print("CanNang updated to:", can_nang_value)
         except ValueError:
             print("Invalid data received from serial.")

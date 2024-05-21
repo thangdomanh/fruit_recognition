@@ -3,40 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FiAlertCircle } from "react-icons/fi";
 import { CiShoppingCart } from "react-icons/ci";
 
-import { toast } from "react-toastify";
-
-
-const FruitModal = ({ openCamera, cart, cartCount }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    console.log("check cartt: ", cart);
-    console.log("check cartCount: ", cartCount);
-
-    return (
-        <>
-            <div className='flex justify-end items-center text-black bg-red-100 w-28 h-10 rounded-full'
-            >
-                <button
-                    onClick={() => {
-                        setIsOpen(true);
-                    }}
-                    className='flex items-center justify-center w-full h-full bg-red-200'
-                >
-                    <span>{cartCount}</span>
-                    <CiShoppingCart className='text-[30px] mr-2 text-gray-500' />
-                </button>
-            </div>
-            <SpringModal
-                isOpen={isOpen}
-                setIsOpen={setIsOpen}
-                labelContainerRef={openCamera}
-                cart={cart}
-            />
-        </>
-    );
-};
-
-const SpringModal = ({ isOpen, setIsOpen, cart }) => {
-    console.log(cart);
+const FruitModal = ({ isOpen, handleCloseModal, cart }) => {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -44,8 +11,8 @@ const SpringModal = ({ isOpen, setIsOpen, cart }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    onClick={() => setIsOpen(false)}
-                    className=" backdrop-blur p-8 fixed inset-0 z-50 grid place-items-center overflow-y-scroll cursor-pointer"
+                    className="h-[350px] w-[550px] p-8 mx-auto my-auto fixed inset-0 z-50 grid place-items-center cursor-pointer"
+
                 >
                     <motion.div
                         initial={{ scale: 0, rotate: "12.5deg" }}
@@ -59,43 +26,39 @@ const SpringModal = ({ isOpen, setIsOpen, cart }) => {
                             <h3 className="text-2xl font-bold text-center mb-6 border-b-2 pb-2">
                                 Thông tin sản phẩm
                             </h3>
+                            <div className="flex items-center justify-center gap-2">
+                                <CiShoppingCart className="text-4xl" />
+                                <p className="text-2xl font-semibold">Giỏ hàng</p>
+                            </div>
                             {cart.length > 0 ? (
                                 cart.map((item, index) => (
-                                    <>
-                                        <p key={index} className="text-left mb-1">
+                                    <div key={index}>
+                                        <p className="text-left mb-1">
                                             Tên sản phẩm: {item.name}
                                         </p>
-                                        <p key={index} className="text-left mb-1">
+                                        <p className="text-left mb-1">
                                             Cân nặng: {item.weight}
                                         </p>
-                                        <p key={index} className="text-left mb-1">
+                                        <p className="text-left mb-1">
                                             Giá: {item.price}
                                         </p>
-                                        <p key={index} className="text-left mb-1">
+                                        <p className="text-left mb-1">
                                             Thành tiền: {item.total}
                                         </p>
-                                    </>
+                                    </div>
                                 ))
                             ) : (
                                 <p className="text-left mb-1">Không có sản phẩm trong giỏ hàng</p>
                             )}
-
-
-                            <p className="text-left mb-1 pb-3 border-b-2">
-                                {/* Cân nặng: {cart.weight} (Kg) */}
-                            </p>
-                            <p className="text-left text-xl mb-1 font-semibold">
-                                {/* Thành tiền: {cart.total} (VND) */}
-                            </p>
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => setIsOpen(false)}
+                                    onClick={handleCloseModal}
                                     className="bg-transparent hover:bg-white/10 transition-colors text-white font-semibold w-full py-2 rounded"
                                 >
                                     Hủy
                                 </button>
                                 <button
-                                    onClick={() => setIsOpen(false)}
+                                    onClick={handleCloseModal}
                                     className="bg-white hover:opacity-90 transition-opacity text-indigo-600 font-semibold w-full py-2 rounded"
                                 >
                                     Thanh toán
