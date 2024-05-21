@@ -28,7 +28,7 @@ const FruitModal = ({ isOpen, handleCloseModal, cart }) => {
         const titleText = "Invoice";
         const titleWidth = doc.getStringUnitWidth(titleText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
         const centerX = (doc.internal.pageSize.width - titleWidth) / 2;
-        doc.setFontSize(18);
+        doc.setFontSize(10);
         doc.text(titleText, centerX, 22);
         // Line separator
         doc.setLineWidth(0.2);
@@ -36,7 +36,7 @@ const FruitModal = ({ isOpen, handleCloseModal, cart }) => {
 
 
         // Invoice details
-        doc.setFontSize(12);
+        doc.setFontSize(8);
         doc.text("Invoice Date:", 14, 30);
 
 
@@ -58,7 +58,7 @@ const FruitModal = ({ isOpen, handleCloseModal, cart }) => {
         const yOffset = 6;
 
         // Titles
-        doc.setFontSize(12);
+        doc.setFontSize(8);
         doc.text("Product Name", xOffset, yPosition);
         doc.text("Weight", xOffset + 50, yPosition);
         doc.text("Price", xOffset + 80, yPosition);
