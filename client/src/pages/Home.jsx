@@ -1,25 +1,37 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as tmImage from '@teachablemachine/image';
-import { getDatabase, ref, onValue, set } from 'firebase/database';
-import { db, app } from '../firebase'
+import { getDatabase, ref, onValue } from 'firebase/database';
+import { db, app } from '../firebase';
 import FruitModal from './modal';
-import { toast } from "react-toastify";
-import { CiShoppingCart } from "react-icons/ci";
-import { jsPDF } from "jspdf";
+import { toast } from 'react-toastify';
+import { CiShoppingCart } from 'react-icons/ci';
+import { FaCamera } from "react-icons/fa";
+import { FiCameraOff } from "react-icons/fi";
+import { GiProcessor } from "react-icons/gi";
+import { FaCartShopping } from "react-icons/fa6";
+import { jsPDF } from 'jspdf';
 
-// Get the reference of the database.
 const database = getDatabase(app);
 const cartRef = ref(database, 'CanNang/');
-const priceRef = ref(database, 'DonGia/')
-
-// const cartRef = ref(database, 'CanNang/');
-// const priceRef = ref(database, 'DonGia/')
+const priceRef = ref(database, 'DonGia/');
 
 const FruitPaymentSystem = () => {
     const URL = "https://raw.githubusercontent.com/thangdomanh/DoAn/main/mymodel/";
-    let model, webcam, labelContainer, maxPredictions, fruitImage, price, fruitWeight, total;
-    let webcamRef = useRef(null);
-    let processing = false;
+    const webcamRef = useRef(null);
+    const webcamContainerRef = useRef(null);
+    const [model, setModel] = useState(null);
+    const [maxPredictions, setMaxPredictions] = useState(0);
+    const [modal, setModal] = useState(false);
+    const [cart, setCart] = useState([]);
+    const [cartCount, setCartCount] = useState(0);
+    const [fruitName, setFruitName] = useState('');
+    const [fruitprice, setPrice] = useState(0);
+    const [weight, setWeight] = useState(0);
+    const [fruitImageSrc, setFruitImageSrc] = useState('');
+    const [fruitImageAlt, setFruitImageAlt] = useState('');
+    const [openCamera, setOpenCamera] = useState(false);
+    const [totalPrice, setTotalPrice] = useState(0);
+    const [processing, setProcessing] = useState(false);
 
     // Get current date
     const currentDate = new Date().toLocaleDateString();
@@ -37,30 +49,14 @@ const FruitPaymentSystem = () => {
         return [day, month, year].join("/");
     };
 
-
-    // const [modelLoaded, setModelLoaded] = useState(false); // State để đánh dấu model đã được tải
-    const webcamContainerRef = useRef();
-    const labelContainerRef = useRef(null);
-    const [modal, setModal] = useState(false);
-    const [cart, setCart] = useState([]);
-    const [cartCount, setCartCount] = useState(0);
-    const [fruitName, setFruitName] = useState('');
-    const [fruitprice, setPrice] = useState(0);
-    const [weight, setWeight] = useState(0);
-    const [fruitImageSrc, setFruitImageSrc] = useState('');
-    const [fruitImageAlt, setFruitImageAlt] = useState('');
-    const [openCamera, setOpenCamera] = useState(false);
-    const [totalPrice, setTotalPrice] = useState(0);
-
-
     useEffect(() => {
         const init = async () => {
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
-
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-        }
+            const loadedModel = await tmImage.load(modelURL, metadataURL);
+            setModel(loadedModel);
+            setMaxPredictions(loadedModel.getTotalClasses());
+        };
 
         init();
     }, []);
@@ -98,88 +94,75 @@ const FruitPaymentSystem = () => {
     };
 
     const predict = async () => {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
-
-        model = await tmImage.load(modelURL, metadataURL);
-        maxPredictions = model.getTotalClasses();
-        // labelContainer = document.getElementById("fruit-name");
-        // price = document.getElementById('fruit-price')
-        // fruitWeight = document.getElementById('fruit-weight')
-        // total = document.getElementById('total')
-        // fruitImage = document.getElementById('fruit-image')
+        if (!model) {
+            console.error('Model not loaded');
+            return;
+        }
 
         const prediction = await model.predict(webcamRef.current.canvas);
         let maxPrediction = 0;
+        let predictedFruitName = '';
         for (let i = 0; i < prediction.length; i++) {
             if (prediction[i].probability > maxPrediction) {
                 maxPrediction = prediction[i].probability;
-                // labelContainer.innerText = prediction[i].className;
-                setFruitName(prediction[i].className);
+                predictedFruitName = prediction[i].className;
             }
         }
-        if (maxPrediction >= 0.90) {
-            // labelContainer.innerText = fruitName;
 
-            setFruitImageSrc(`./src/assets/image/${fruitName}.jpg`);
-            setFruitImageAlt(fruitName);
+        if (maxPrediction >= 0.40) {
+            setFruitName(predictedFruitName);
+            setFruitImageSrc(`./src/assets/image/${predictedFruitName}.jpg`);
+            setFruitImageAlt(predictedFruitName);
 
-            // Truy cập cơ sở dữ liệu Firebase để lấy giá tiền
+            // Use local variables to ensure data consistency
+            let fetchedWeight = 0;
+            let fetchedPrice = 0;
+
             onValue(cartRef, (cartSnapshot) => {
                 const cartData = cartSnapshot.val();
                 if (cartData) {
-                    console.log('Can nang:', cartData, 'gram');
-                    setWeight(cartData); // Update state
+                    fetchedWeight = cartData;
+                    setWeight(cartData);
                 } else {
                     console.log('Cart data not found');
                 }
-            });
 
-            onValue(priceRef, (priceSnapshot) => {
-                const priceData = priceSnapshot.val();
-                if (priceData) {
-                    //get current fruitName
-                    const fruitPrice = priceData[fruitName];
-                    console.log('Price:', fruitPrice, 'VND');
-                    if (fruitPrice) {
-                        setPrice(fruitPrice); // Update state
+                // Update price only after weight is set
+                onValue(priceRef, (priceSnapshot) => {
+                    const priceData = priceSnapshot.val();
+                    if (priceData) {
+                        const fruitPrice = priceData[predictedFruitName];
+                        if (fruitPrice) {
+                            fetchedPrice = fruitPrice;
+                            setPrice(fruitPrice);
 
-                        // Calculate total
-                        const totalPrice = (fruitPrice / 1000) * weight;
-                        //convert totalPrice to 1,000 VND
-                        setTotalPrice(totalPrice);
-
-                        console.log('Total Price:', totalPrice.toLocaleString(), 'VND');
+                            // Ensure weight is set before calculating total price
+                            setTotalPrice(fruitPrice * fetchedWeight / 1000);
+                        } else {
+                            console.log(`No price found for ${predictedFruitName}`);
+                        }
                     } else {
-                        console.log(`No price found for ${labelContainer.innerText}`);
+                        console.log('Price data not found');
                     }
-                } else {
-                    console.log('Price data not found');
-                }
+                });
             });
-
         } else {
-            labelContainer.innerText = "nothing";
+            console.log("Prediction probability too low");
         }
     };
 
 
     const startProcessing = async () => {
-        processing = true;
+        setProcessing(true);
 
-        // Xử lý 20 hình ảnh
         for (let i = 0; i < 2; i++) {
-            // Gọi hàm predict để thực hiện dự đoán
             await predict();
         }
 
-        // Tắt chế độ xử lý sau khi hoàn thành
-
-        processing = false;
+        setProcessing(false);
     };
 
     const handleAddCart = () => {
-        console.log("Check label in handleAdd: ", fruitName);
         if (!fruitName) {
             toast.error('Vui lòng mở camera và chụp hình trước khi thêm vào giỏ hàng', {
                 position: "top-center",
@@ -192,17 +175,14 @@ const FruitPaymentSystem = () => {
             });
             return;
         } else {
-            // console.log('Check cart: ', );
             const item = {
                 name: fruitName,
                 price: fruitprice,
                 weight: weight,
                 total: totalPrice,
             };
-            //check if item is already in cart
             const found = cart.find((element) => element.name === item.name);
             if (found) {
-                //update quantity
                 const newCart = cart.map((element) => {
                     if (element.name === item.name) {
                         return {
@@ -219,9 +199,6 @@ const FruitPaymentSystem = () => {
             }
             setCartCount(cartCount + 1);
 
-
-
-            console.log(cart);
             toast.success('Đã thêm vào giỏ hàng', {
                 position: "top-center",
                 autoClose: 3000,
@@ -231,22 +208,19 @@ const FruitPaymentSystem = () => {
                 draggable: true,
                 progress: undefined,
             });
-            //reset
+
             setFruitName('');
             setPrice(0);
             setWeight(0);
             setTotalPrice(0);
             setFruitImageSrc('');
             setFruitImageAlt('');
-
         }
     };
 
     const handleOpenModal = () => {
-        console.log('Check cart in handleOpenModal: ', cart);
         setModal(true);
-        console.log('Check modal in handleOpenModal: ', modal);
-    }
+    };
 
     return (
         <div className='h-screen bg-slate-200 flex flex-row'>
@@ -337,17 +311,19 @@ const FruitPaymentSystem = () => {
                 {openCamera ? (
                     <>
                         <div id='webcam-container' className='h-5/6 rounded m-2 flex justify-around items-start' ref={webcamContainerRef}></div>
-                        <div className='m-2 flex flex-row justify-around items-center'>
+                        <div className='m-2 flex flex-row gap-3 justify-around items-center'>
                             <button
                                 onClick={handleCloseCamera}
-                                className=' bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
+                                className='flex flex-row justify-center items-center gap-3 w-1/2 bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
                             >
+                                <FiCameraOff className='text-[20px]' />
                                 {'Close Camera'}
                             </button>
                             <button
                                 onClick={startProcessing}
-                                className=' bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
+                                className='flex flex-row justify-center items-center gap-3 w-1/2 bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
                             >
+                                <GiProcessor className='text-[20px]' />
                                 {'Process Image'}
                             </button>
                         </div>
@@ -357,12 +333,15 @@ const FruitPaymentSystem = () => {
                         <div id='webcam-container' className='h-5/6 flex justify-center items-center text-md text-slate-400' >
                             Bấm nút để mở camera
                         </div>
-                        <div className='m-2'>
+                        <div className='m-2 '>
                             <button
                                 onClick={handleOpenCamera}
-                                className='w-full bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
+                                className='flex flex-row justify-center items-center gap-3 w-full bg-violet-600 text-white px-2 py-3 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
                             >
-                                {'Open Camera'}
+                                <FaCamera className='text-[20px]' />
+                                <div>
+                                    {'Open Camera'}
+                                </div>
                             </button>
                         </div>
                     </>
@@ -391,13 +370,20 @@ const FruitPaymentSystem = () => {
                         </div>
                     </div>
                     <div className='w-2/3 flex flex-col'>
-                        <button
-                            onClick={handleOpenModal}
-                            className='flex items-center justify-center w-full h-full bg-red-200'
-                        >
-                            <span>{cartCount}</span>
-                            <CiShoppingCart className='text-[30px] mr-2 text-gray-500' />
-                        </button>
+                        <div className='w-full flex justify-end'>
+                            <div className="relative flex items-center">
+                                <button
+                                    onClick={handleOpenModal}
+                                    className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-gray-200 relative "
+                                >
+                                    <div className="absolute top-0 left-8 z-10 w-[18px] h-[18px] flex justify-center items-center text-xs rounded-full bg-red-600 text-white">
+                                        {cartCount}
+                                    </div>
+                                    <FaCartShopping className="text-[20px] text-gray-600 hover:scale-110 duration-300" />
+                                </button>
+                            </div>
+                        </div>
+
                         <div className='rounded m-2 mb-1 flex flex-col'>
                             <div className='p-3 border-b-2 border-slate-400 m-2'>
                                 <span className='text-left text-lg font-semibold'>Product Information</span>
@@ -412,16 +398,19 @@ const FruitPaymentSystem = () => {
                                 <label id="fruit-name" className='w-1/3'>{fruitName}</label>
                                 <div id='fruit-weight' className='w-1/3'>{weight.toLocaleString()} gram</div>
                                 <div id='fruit-price' className='w-1/3'>{fruitprice.toLocaleString()} VND</div>
-                                <div id='total' className='w-1/3'>{(fruitprice * weight / 1000).toLocaleString()} VND</div>
+                                <div id='total' className='w-1/3'>{totalPrice.toLocaleString()} VND</div>
                             </div>
 
-                            <div className='flex justify-end mt-3'>
-                                <div className='flex justify-end mt-3'>
+                            <div className='flex justify-end mt-3 w-full'>
+                                <div className='flex justify-end mt-3 w-full'>
                                     <button
                                         onClick={handleAddCart}
-                                        className='bg-violet-600 text-white p-2 rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
+                                        className='flex flex-row gap-2 justify-center items-center bg-violet-600 text-white p-2 w-full rounded hover:bg-violet-900 hover:shadow-xl transition duration-500'
                                     >
-                                        Add to cart
+                                        <CiShoppingCart className='text-[20px]' />
+                                        <span>
+                                            Add to Cart
+                                        </span>
                                     </button>
                                     {/* {cartCount} */}
                                 </div>
