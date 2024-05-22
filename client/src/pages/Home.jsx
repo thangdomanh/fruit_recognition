@@ -137,7 +137,7 @@ const FruitPaymentSystem = () => {
                             setPrice(fruitPrice);
 
                             // Ensure weight is set before calculating total price
-                            setTotalPrice(fruitPrice * fetchedWeight / 1000);
+                            setTotalPrice(fruitPrice * fetchedWeight);
                         } else {
                             console.log(`No price found for ${predictedFruitName}`);
                         }
