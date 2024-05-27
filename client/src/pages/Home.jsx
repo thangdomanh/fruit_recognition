@@ -16,7 +16,7 @@ const cartRef = ref(database, 'CanNang/');
 const priceRef = ref(database, 'DonGia/');
 
 const FruitPaymentSystem = () => {
-    const URL = "https://raw.githubusercontent.com/thangdomanh/DoAn/main/modeltest/";
+    const URL = "https://raw.githubusercontent.com/thangdomanh/DoAn/main/mymodel/";
     const webcamRef = useRef(null);
     const webcamContainerRef = useRef(null);
     const [model, setModel] = useState(null);

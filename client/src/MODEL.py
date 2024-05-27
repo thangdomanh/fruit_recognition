@@ -1,7 +1,12 @@
-import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
-
+import os
+from IPython.display import Image
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.pyplot import imread
+import numpy as np
 # Function to preprocess the image
 def preprocess_image(image_path):
     image = tf.io.read_file(image_path)
@@ -10,17 +15,9 @@ def preprocess_image(image_path):
     image = tf.expand_dims(image, axis=0)  # Add batch dimension
     image /= 255.0  # Normalize to [0, 1] range
     return image
-
-# Correct handle to the TensorFlow Hub module
-hub_handle = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/classification/4"
-model_path = "C://fruit_recognition/client/src/predict/model.h5"
-# Define a function to create a KerasLayer with the correct handle
-def custom_keras_layer(config):
-    return hub.KerasLayer(hub_handle, **config)
-
-# Load the trained model using the custom KerasLayer
-model_path = "C://fruit_recognition/client/src/predict/model.h5"
-model = tf.keras.models.load_model(model_path, custom_objects={'KerasLayer': custom_keras_layer})
+# Load the trained model
+model_path = "C:/fruit_recognition/client/src/predict/model.h5"
+model = tf.keras.models.load_model(model_path, custom_objects={'KerasLayer': hub.KerasLayer})
 
 # Path to the test image
 test_image_path = 'C:/fruit_recognition/client/src/predict/Image/Image_1.jpg'
