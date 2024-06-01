@@ -85,6 +85,8 @@ def preprocess_image(image):
 @app.route('/predict', methods=['POST'])
 def predict():
 
+    model = tf.keras.models.load_model(model_path, custom_objects={'KerasLayer': hub.KerasLayer})
+    
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 400
 

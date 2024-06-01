@@ -126,7 +126,7 @@ const FruitPaymentSystem = () => {
                 onValue(priceRef, (priceSnapshot) => {
                     const priceData = priceSnapshot.val();
                     if (priceData) {
-                        const fruitPrice = priceData[predictedFruitName];
+                        const fruitPrice = priceData[class_label];
                         if (fruitPrice) {
                             fetchedPrice = fruitPrice;
                             setPrice(fruitPrice);
@@ -134,7 +134,7 @@ const FruitPaymentSystem = () => {
                             // Ensure weight is set before calculating total price
                             setTotalPrice(fruitPrice * fetchedWeight);
                         } else {
-                            console.log(`No price found for ${predictedFruitName}`);
+                            console.log(`No price found for ${class_label}`);
                         }
                     } else {
                         console.log('Price data not found');

@@ -31,6 +31,7 @@ soy beans
 spinach
 sweetcorn
 sweetpotato
+thang
 tomato
 turnip
 watermelon
