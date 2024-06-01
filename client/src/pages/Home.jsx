@@ -10,7 +10,7 @@ import { FiCameraOff } from "react-icons/fi";
 import { GiProcessor } from "react-icons/gi";
 import { FaCartShopping } from "react-icons/fa6";
 import { jsPDF } from 'jspdf';
-
+import axios from 'axios';
 const database = getDatabase(app);
 const cartRef = ref(database, 'CanNang/');
 const priceRef = ref(database, 'DonGia/');
@@ -21,6 +21,7 @@ const FruitPaymentSystem = () => {
     const webcamContainerRef = useRef(null);
     const [model, setModel] = useState(null);
     const [maxPredictions, setMaxPredictions] = useState(0);
+    const [fruitProbability, setFruitProbability] = useState(0);
     const [modal, setModal] = useState(false);
     const [cart, setCart] = useState([]);
     const [cartCount, setCartCount] = useState(0);
@@ -32,6 +33,9 @@ const FruitPaymentSystem = () => {
     const [openCamera, setOpenCamera] = useState(false);
     const [totalPrice, setTotalPrice] = useState(0);
     const [processing, setProcessing] = useState(false);
+    
+
+
 
     // Get current date
     const currentDate = new Date().toLocaleDateString();
@@ -51,11 +55,23 @@ const FruitPaymentSystem = () => {
 
     useEffect(() => {
         const init = async () => {
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
-            const loadedModel = await tmImage.load(modelURL, metadataURL);
-            setModel(loadedModel);
-            setMaxPredictions(loadedModel.getTotalClasses());
+            // const modelURL = URL + "model.json";
+            // const metadataURL = URL + "metadata.json";
+            // const loadedModel = await tmImage.load(modelURL, metadataURL);
+            // setModel(loadedModel);
+            // setMaxPredictions(loadedModel.getTotalClasses());
+            if (webcamRef.current) {
+                await webcamRef.current.stop();
+                webcamRef.current = null;
+            }
+
+            webcamRef.current = new tmImage.Webcam(400, 400, true);
+            await webcamRef.current.setup();
+            await webcamRef.current.play();
+            if (webcamContainerRef.current) {
+                webcamContainerRef.current.appendChild(webcamRef.current.canvas);
+            }
+            loop();
         };
 
         init();
@@ -65,55 +81,34 @@ const FruitPaymentSystem = () => {
         if (webcamRef.current) {
             webcamRef.current.update();
             if (processing) {
-                await predict();
+                await captureAndPredict();
             }
             window.requestAnimationFrame(loop);
         }
     };
 
-    const handleOpenCamera = async () => {
-        setOpenCamera(true);
-        if (webcamRef.current) {
-            await webcamRef.current.stop();
-            webcamRef.current = null;
-        }
+    const captureAndPredict = async () => {
+        const imageSrc = webcamRef.current.canvas.toDataURL('image/jpeg');
+        const formData = new FormData();
+        const response = await fetch(imageSrc);
+        const blob = await response.blob();
+        formData.append('image', blob, 'image.jpg');
 
-        webcamRef.current = new tmImage.Webcam(400, 400, true);
-        await webcamRef.current.setup();
-        await webcamRef.current.play();
-        webcamContainerRef.current.appendChild(webcamRef.current.canvas);
-        loop();
-    };
+        try {
+            const res = await axios.post('http://127.0.0.1:3000/predict', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
-    const handleCloseCamera = async () => {
-        setOpenCamera(false);
-        if (webcamRef.current) {
-            await webcamRef.current.stop();
-            webcamRef.current = null;
-        }
-    };
-
-    const predict = async () => {
-        if (!model) {
-            console.error('Model not loaded');
-            return;
-        }
-
-        const prediction = await model.predict(webcamRef.current.canvas);
-        let maxPrediction = 0;
-        let predictedFruitName = '';
-        for (let i = 0; i < prediction.length; i++) {
-            if (prediction[i].probability > maxPrediction) {
-                maxPrediction = prediction[i].probability;
-                predictedFruitName = prediction[i].className;
-            }
-        }
-
-        if (maxPrediction >= 0.40) {
-            setFruitName(predictedFruitName);
-            setFruitImageSrc(`./src/assets/image/${predictedFruitName}.jpg`);
-            setFruitImageAlt(predictedFruitName);
-
+            const { class_label, class_probability } = res.data;
+            if (class_probability >= 0.40) {
+                console.log("test",class_label, class_probability);
+                setFruitName(class_label);
+                setFruitProbability(class_probability);
+                setFruitImageAlt(class_label);
+                setFruitImageSrc(`./src/assets/image/${class_label}.jpg`);
+                setFruitImageAlt(class_label);
+                
+            
             // Use local variables to ensure data consistency
             let fetchedWeight = 0;
             let fetchedPrice = 0;
@@ -146,17 +141,103 @@ const FruitPaymentSystem = () => {
                     }
                 });
             });
-        } else {
-            console.log("Prediction probability too low");
+        }
+        } catch (error) {
+            console.error('Error predicting image', error);
         }
     };
+
+
+    // Rest of the code...
+
+    const handleOpenCamera = async () => {
+        setOpenCamera(true);
+        if (webcamRef.current) {
+            await webcamRef.current.stop();
+            webcamRef.current = null;
+        }
+
+        webcamRef.current = new tmImage.Webcam(400, 400, true);
+        await webcamRef.current.setup();
+        await webcamRef.current.play();
+        if (webcamContainerRef.current) {
+            webcamContainerRef.current.appendChild(webcamRef.current.canvas);
+        }
+        loop();
+    };
+
+    const handleCloseCamera = async () => {
+        setOpenCamera(false);
+        if (webcamRef.current) {
+            await webcamRef.current.stop();
+            webcamRef.current = null;
+        }
+    };
+
+    // const predict = async () => {
+    //     if (!model) {
+    //         console.error('Model not loaded');
+    //         return;
+    //     }
+
+    //     const prediction = await model.predict(webcamRef.current.canvas);
+    //     let maxPrediction = 0;
+    //     let predictedFruitName = '';
+    //     for (let i = 0; i < prediction.length; i++) {
+    //         if (prediction[i].probability > maxPrediction) {
+    //             maxPrediction = prediction[i].probability;
+    //             predictedFruitName = prediction[i].className;
+    //         }
+    //     }
+
+    //     if (maxPrediction >= 0.40) {
+    //         setFruitName(predictedFruitName);
+    //         setFruitImageSrc(`./src/assets/image/${predictedFruitName}.jpg`);
+    //         setFruitImageAlt(predictedFruitName);
+
+    //         // Use local variables to ensure data consistency
+    //         let fetchedWeight = 0;
+    //         let fetchedPrice = 0;
+
+    //         onValue(cartRef, (cartSnapshot) => {
+    //             const cartData = cartSnapshot.val();
+    //             if (cartData) {
+    //                 fetchedWeight = cartData;
+    //                 setWeight(cartData);
+    //             } else {
+    //                 console.log('Cart data not found');
+    //             }
+
+    //             // Update price only after weight is set
+    //             onValue(priceRef, (priceSnapshot) => {
+    //                 const priceData = priceSnapshot.val();
+    //                 if (priceData) {
+    //                     const fruitPrice = priceData[predictedFruitName];
+    //                     if (fruitPrice) {
+    //                         fetchedPrice = fruitPrice;
+    //                         setPrice(fruitPrice);
+
+    //                         // Ensure weight is set before calculating total price
+    //                         setTotalPrice(fruitPrice * fetchedWeight);
+    //                     } else {
+    //                         console.log(`No price found for ${predictedFruitName}`);
+    //                     }
+    //                 } else {
+    //                     console.log('Price data not found');
+    //                 }
+    //             });
+    //         });
+    //     } else {
+    //         console.log("Prediction probability too low");
+    //     }
+    // };
 
 
     const startProcessing = async () => {
         setProcessing(true);
 
         for (let i = 0; i < 2; i++) {
-            await predict();
+            await captureAndPredict();
         }
 
         setProcessing(false);
@@ -208,7 +289,6 @@ const FruitPaymentSystem = () => {
                 draggable: true,
                 progress: undefined,
             });
-
             setFruitName('');
             setPrice(0);
             setWeight(0);
@@ -326,6 +406,7 @@ const FruitPaymentSystem = () => {
                                 <GiProcessor className='text-[20px]' />
                                 {'Process Image'}
                             </button>
+                            
                         </div>
                     </>
                 ) : (

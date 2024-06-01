@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Capture</title>
+    <link rel="stylesheet" href="./style.css">
+    <style>
+        #camera {
+            width: 640px;
+            height: 480px;
+            border: 1px solid black;
+        }
+        #capture {
+            display: block;
+            margin-top: 10px;
+        }
+        #photo {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="title">Webcam Capture</span>
+        <div class="content">
+            <div class="camera-container">
+                <video id="camera" class="camera" autoplay></video>
+                <div class="capture-container">
+                    <input type="text" id="username" class="capture-input" placeholder="Enter your name">
+                    <button id="capture" class="capture-btn">Capture</button>
+                </div>
+                <canvas id="photo"></canvas>
+            </div>
+            <div class="feature-container">
+                <div class="delete-folder">
+                    <span class="delete-title">Delete Folder</span>
+                    <div class="delete-content">
+                        <label for="folder-select" class="select-folder">Select Folder:</label>
+                        <select id="folder-select" class="select-input"></select>
+                        <button id="delete-button" class="delete-btn">Delete Folder</button>
+                    </div>
+                </div>
+                <!-- tinh nang train model -->
+                <div class="train-model">
+                    <span class="train-title">Train Model</span>
+                    <div class="train-content">
+                        <p id="status" class="train-status">training</p>
+                        <p id="timer" class="train-timer">Estimate time: </p>
+                        <button id="train-button" class="train-btn">Train Model</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const camera = document.getElementById('camera');
+        const captureButton = document.getElementById('capture');
+        const photoCanvas = document.getElementById('photo');
+        const usernameInput = document.getElementById('username');
+
+        // Request access to the webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                camera.srcObject = stream;
+            })
+            .catch(err => {
+                console.error('Error accessing the camera: ', err);
+            });
+
+        // Capture photo
+captureButton.addEventListener('click', () => {
+    const context = photoCanvas.getContext('2d');
+    photoCanvas.width = camera.videoWidth;
+    photoCanvas.height = camera.videoHeight;
+    context.drawImage(camera, 0, 0, photoCanvas.width, photoCanvas.height);
+    const photoData = photoCanvas.toDataURL('image/jpeg');
+
+    const username = usernameInput.value;
+    if (username) {
+        fetch('http://127.0.0.1:3000/save_photo', { // Địa chỉ URL của máy chủ Flask
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username: username, photo: photoData }),
+        })
+        .then(response => response.json())
+        .catch(error => {
+            console.error('Error saving photo:', error);
+        });
+    } else {
+        alert('Please enter your name.');
+    }
+    
+    // Call the function again for the second capture
+    context.drawImage(camera, 0, 0, photoCanvas.width, photoCanvas.height);
+    const secondPhotoData = photoCanvas.toDataURL('image/jpeg');
+
+    if (username) {
+        fetch('http://127.0.0.1:3000/save_photo', { // Địa chỉ URL của máy chủ Flask
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username: username, photo: secondPhotoData }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Second photo saved successfully!');
+        })
+        .catch(error => {
+            console.error('Error saving second photo:', error);
+        });
+    } else {
+        alert('Please enter your name.');
+    }
+});
+
+        
+
+    // Function to update folder list when button is clicked
+    function updateFolderList() {
+        displayFolderNames();
+    }
+
+
+
+   // Function to fetch and display folder names
+function displayFolderNames() {
+    fetch('http://127.0.0.1:3000/list_folders') // Thay đổi địa chỉ URL thành URL của máy chủ Flask
+        .then(response => response.json())
+        .then(data => {
+            const folderSelect = document.getElementById('folder-select');
+            folderSelect.innerHTML = '';
+
+            data.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder;
+                option.textContent = folder;
+                folderSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching folder names:', error);
+        });
+}
+
+// Function to delete folder
+function deleteFolder() {
+    const selectedFolder = document.getElementById('folder-select').value;
+    if (selectedFolder) {
+        if (confirm(`Are you sure you want to delete folder '${selectedFolder}'?`)) {
+            fetch(`http://127.0.0.1:3000/delete_folder?folder=${encodeURIComponent(selectedFolder)}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                displayFolderNames(); // Refresh folder list
+            })
+            .catch(error => {
+                console.error('Error deleting folder:', error);
+            });
+        }
+    } else {
+        alert('Please select a folder to delete.');
+    }
+}
+
+// Function to call the train_model endpoint
+        function trainModel() {
+            const startTime = new Date();
+            document.getElementById('status').textContent = 'Training model...';
+            document.getElementById('timer').textContent = 'Elapsed time: 0s';
+            
+            const intervalId = setInterval(() => {
+                const elapsedTime = Math.round((new Date() - startTime) / 1000);
+                document.getElementById('timer').textContent = `Elapsed time: ${elapsedTime}s`;
+            }, 1000);
+
+            fetch('http://127.0.0.1:3000/train_model', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(intervalId);
+                document.getElementById('status').textContent = data.message;
+                const elapsedTime = Math.round((new Date() - startTime) / 1000);
+                document.getElementById('timer').textContent = `Elapsed time: ${elapsedTime}s`;
+            })
+            .catch(error => {
+                clearInterval(intervalId);
+                document.getElementById('status').textContent = 'Error training model';
+                console.error('Error training model:', error);
+            });
+        }
+
+// Call the function when the page loads
+window.onload = function() {
+    displayFolderNames();
+
+    const deleteButton = document.getElementById('delete-button');
+    deleteButton.addEventListener('click', deleteFolder);
+
+    displayFolderNames();
+    // Add event listener to the button
+    const updateButton = document.getElementById('capture');
+    updateButton.addEventListener('click', updateFolderList);
+    const trainButton = document.getElementById('train-button');
+            trainButton.addEventListener('click', trainModel);
+};
+        
+        
+    </script>
+</body>
+</html>
