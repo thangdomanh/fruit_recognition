@@ -25,44 +25,44 @@ const FruitModal = ({ isOpen, handleCloseModal, generatePDF, cart }) => {
                         <FiAlertCircle className="text-white/10 rotate-12 text-[250px] absolute z-0 -top-24 -left-24" />
                         <div className="relative z-10">
                             <h3 className="text-2xl font-bold text-center mb-6 border-b-2 pb-2">
-                                Thông tin sản phẩm
+                                Product Information
                             </h3>
                             <div className="flex items-center justify-center gap-2">
                                 <CiShoppingCart className="text-4xl" />
-                                <p className="text-2xl font-semibold">Giỏ hàng</p>
+                                <p className="text-2xl font-semibold">Cart</p>
                             </div>
                             {cart.length > 0 ? (
                                 cart.map((item, index) => (
                                     <div key={index}>
                                         <p className="text-left mb-1">
-                                            Tên sản phẩm: {item.name}
+                                            Product Name: {item.name}
                                         </p>
                                         <p className="text-left mb-1">
-                                            Cân nặng: {item.weight}
+                                            Weight: {item.weight}
                                         </p>
                                         <p className="text-left mb-1">
-                                            Giá: {item.price}
+                                            Price: {item.price}
                                         </p>
                                         <p className="text-left mb-1">
-                                            Thành tiền: {item.total}
+                                            Total: {item.total}
                                         </p>
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-left mb-1">Không có sản phẩm trong giỏ hàng</p>
+                                <p className="text-left mb-1">There are no items in the cart.</p>
                             )}
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleCloseModal}
                                     className="bg-transparent hover:bg-white/10 transition-colors text-white font-semibold w-full py-2 rounded"
                                 >
-                                    Hủy
+                                    Cancel
                                 </button>
                                 <button
                                     onClick={generatePDF}
                                     className="bg-white hover:opacity-90 transition-opacity text-indigo-600 font-semibold w-full py-2 rounded"
                                 >
-                                    Thanh toán
+                                    Checkout
                                 </button>
                             </div>
                         </div>

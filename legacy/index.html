@@ -41,7 +41,7 @@
                         <button id="delete-button" class="delete-btn">Delete Folder</button>
                     </div>
                 </div>
-                <!-- tinh nang train model -->
+                <!-- Train model feature -->
                 <div class="train-model">
                     <span class="train-title">Train Model</span>
                     <div class="train-content">
@@ -79,7 +79,7 @@ captureButton.addEventListener('click', () => {
 
     const username = usernameInput.value;
     if (username) {
-        fetch('http://127.0.0.1:3000/save_photo', { // Địa chỉ URL của máy chủ Flask
+        fetch('http://127.0.0.1:3000/save_photo', { // Flask server URL
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -99,7 +99,7 @@ captureButton.addEventListener('click', () => {
     const secondPhotoData = photoCanvas.toDataURL('image/jpeg');
 
     if (username) {
-        fetch('http://127.0.0.1:3000/save_photo', { // Địa chỉ URL của máy chủ Flask
+        fetch('http://127.0.0.1:3000/save_photo', { // Flask server URL
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ captureButton.addEventListener('click', () => {
 
    // Function to fetch and display folder names
 function displayFolderNames() {
-    fetch('http://127.0.0.1:3000/list_folders') // Thay đổi địa chỉ URL thành URL của máy chủ Flask
+    fetch('http://127.0.0.1:3000/list_folders') // Flask server URL
         .then(response => response.json())
         .then(data => {
             const folderSelect = document.getElementById('folder-select');

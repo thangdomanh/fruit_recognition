@@ -1,8 +1,6 @@
 # Fruit Recognition Checkout
 
-Smart checkout prototype that uses a webcam, a TensorFlow image classifier, Firebase Realtime Database weight/price data, and a React cart UI to identify produce and calculate totals.
-
-![Web mockup](docs/web-mockup.png)
+Smart checkout prototype that uses a webcam, a TensorFlow image classifier, Firebase Realtime Database weight and unit-price data, and a React cart UI to identify produce and calculate totals.
 
 ## What This Project Does
 
@@ -10,8 +8,8 @@ This repository contains a complete fruit and vegetable recognition workflow:
 
 - The **frontend** opens the webcam, captures an image, sends it to the API, shows the predicted product, reads weight and price data from Firebase, builds a cart, and exports an invoice PDF.
 - The **backend** serves a Flask API for image prediction, dataset folder management, photo capture storage, and optional retraining.
-- The **model assets** include the current Keras model, class label file, and image archive used for training/testing/validation.
-- The **hardware bridge** reads weight values from a serial device and writes `CanNang` to Firebase.
+- The **model assets** include the current Keras model, class label file, and image archive used for training, testing, and validation.
+- The **hardware bridge** reads weight values from a serial device and writes `Weight` to Firebase.
 
 ## Repository Layout
 
@@ -41,7 +39,7 @@ fruit_recognition/
 |       +-- firebase.js                # Firebase client config
 |       +-- assets/image/              # Product images shown in the UI
 +-- notebooks/
-|   +-- datn1.ipynb                    # Original training/exploration notebook
+|   +-- datn1.ipynb                    # Original training and exploration notebook
 +-- legacy/
 |   +-- index.html, main.html, style.css
 |   +-- model.h5
@@ -116,7 +114,7 @@ Use the UI in this order:
 
 ## Hardware Bridge
 
-`backend/hardware/UART.py` reads serial data and pushes the latest weight to Firebase as `CanNang`.
+`backend/hardware/UART.py` reads serial data and pushes the latest weight to Firebase as `Weight`.
 
 Run it from the repository root:
 
@@ -130,6 +128,13 @@ Before running, check these values in `UART.py`:
 - `serial_port = 'COM8'`: change this to the port used by your scale or microcontroller.
 - `baud_rate = 115200`: match this to the device firmware.
 - Firebase credential JSON: currently stored beside `UART.py`.
+
+## Firebase Keys
+
+The English Firebase keys expected by this project are:
+
+- `Weight`: latest weight value written by the serial bridge.
+- `UnitPrice`: map of product names to unit prices used by the frontend.
 
 ## Model And Data Notes
 
@@ -145,7 +150,8 @@ Before running, check these values in `UART.py`:
 - **Camera does not open:** allow browser camera permission and close other apps using the webcam.
 - **Class names file not found:** confirm `backend/ml/model/kind.txt` exists.
 - **Model load fails:** confirm `backend/ml/model/model.h5` exists and TensorFlow/TensorFlow Hub installed correctly.
-- **Weight is always zero:** confirm Firebase has a `CanNang` value or run the serial bridge.
+- **Weight is always zero:** confirm Firebase has a `Weight` value or run the serial bridge.
+- **Unit price is missing:** confirm Firebase has a `UnitPrice` entry for the predicted product label.
 - **Serial bridge fails:** verify the COM port, baud rate, and Firebase admin JSON path.
 
 ## Security Note

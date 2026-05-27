@@ -1,4 +1,4 @@
-<div>Hệ thống tính tiền trái cây tự động</div>
+<div>Automatic Fruit Checkout System</div>
 <div id="webcam-container"></div>
 <div id="label-container"></div>
 <button id="start-button">Start Processing</button>
@@ -25,7 +25,7 @@
         document.getElementById("webcam-container").appendChild(webcam.canvas);
         labelContainer = document.getElementById("label-container");
 
-        // Gắn sự kiện click cho nút "Start Processing"
+        // Attach the click handler to the "Start Processing" button.
         document.getElementById("start-button").addEventListener("click", startProcessing);
     }
 
@@ -47,20 +47,20 @@
         }
     }
 
-    // Hàm bắt đầu xử lý khi nút "Start Processing" được nhấn
+    // Start processing when the "Start Processing" button is clicked.
     function startProcessing() {
         processing = true;
 
-        // Xử lý 20 hình ảnh
+        // Process 20 frames.
         for (let i = 0; i < 20; i++) {
-            // Gọi hàm predict để thực hiện dự đoán
+            // Run prediction.
             predict();
         }
 
-        // Tắt chế độ xử lý sau khi hoàn thành
+        // Disable processing after the run finishes.
         processing = false;
     }
 
-    // Gọi hàm init mà không cần nút "Start"
+    // Initialize the webcam and model when the page loads.
     init();
 </script>

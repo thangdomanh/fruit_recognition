@@ -17,20 +17,20 @@ const FruitPaymentSystem = () => {
             maxPredictions = model.getTotalClasses();
 
             const flip = true;
-            webcam = new tmImage.Webcam(400, 200, flip);  // Kích thước webcam canvas
+            webcam = new tmImage.Webcam(400, 200, flip);  // Webcam canvas size
             await webcam.setup();
             await webcam.play();
             window.requestAnimationFrame(loop);
 
             const webcamCanvas = webcam.canvas;
-            webcamCanvas.width = webcamContainerRef.current.clientWidth; // Sử dụng clientWidth thay vì offsetWidth
-            webcamCanvas.height = webcamContainerRef.current.clientHeight; // Sử dụng clientHeight thay vì offsetHeight
+            webcamCanvas.width = webcamContainerRef.current.clientWidth; // Use clientWidth instead of offsetWidth
+            webcamCanvas.height = webcamContainerRef.current.clientHeight; // Use clientHeight instead of offsetHeight
 
 
             webcamContainerRef.current.appendChild(webcamCanvas);
             labelContainer = document.getElementById("label-container");
 
-            // Gắn sự kiện click cho nút "Start Processing"
+            // Attach the click handler to the "Start Processing" button.
             document.getElementById("start-button").addEventListener("click", startProcessing);
         };
 
@@ -55,17 +55,17 @@ const FruitPaymentSystem = () => {
         }
     };
 
-    // Hàm bắt đầu xử lý khi nút "Start Processing" được nhấn
+    // Start processing when the "Start Processing" button is clicked.
     const startProcessing = () => {
         processing = true;
 
-        // Xử lý 20 hình ảnh
+        // Process 20 frames.
         for (let i = 0; i < 20; i++) {
-            // Gọi hàm predict để thực hiện dự đoán
+            // Run prediction.
             predict();
         }
 
-        // Tắt chế độ xử lý sau khi hoàn thành
+        // Disable processing after the run finishes.
         processing = false;
     };
     return (
@@ -73,7 +73,7 @@ const FruitPaymentSystem = () => {
             <div className='h-screen bg-slate-200 flex flex-col'>
                 <div className='h-1/2 m-2'>
                     <div className='h-1/6 flex text-lg bg-white m-2 text-center justify-center items-center rounded-md font-semibold text-violet-600'>
-                        <span className=' text-center my-auto '>DO AN 2</span>
+                        <span className=' text-center my-auto '>Project 2</span>
                     </div>
                     <div className='h-5/6 flex flex-row'>
                         <div className='w-1/3 bg-white m-2 rounded-md'>
@@ -93,7 +93,7 @@ const FruitPaymentSystem = () => {
                                     <div id='label-container' className='h-1/5'></div>
                                 </div>
                                 <div className='h-10 m-2 mt-1'>
-                                    <button className='bg-slate-100 rounded w-full p-2 hover:bg-slate-600 hover:text-white transition duration-500'>THANH TOÁN</button>
+                                    <button className='bg-slate-100 rounded w-full p-2 hover:bg-slate-600 hover:text-white transition duration-500'>Checkout</button>
                                 </div>
                             </div>
                         </div>

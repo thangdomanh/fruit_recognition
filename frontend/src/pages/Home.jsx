@@ -12,8 +12,8 @@ import { FaCartShopping } from "react-icons/fa6";
 import { jsPDF } from 'jspdf';
 import axios from 'axios';
 const database = getDatabase(app);
-const cartRef = ref(database, 'CanNang/');
-const priceRef = ref(database, 'DonGia/');
+const cartRef = ref(database, 'Weight/');
+const priceRef = ref(database, 'UnitPrice/');
 
 const FruitPaymentSystem = () => {
     const URL = "https://raw.githubusercontent.com/thangdomanh/DoAn/main/mymodel/";
@@ -245,7 +245,7 @@ const FruitPaymentSystem = () => {
 
     const handleAddCart = () => {
         if (!fruitName) {
-            toast.error('Vui lòng mở camera và chụp hình trước khi thêm vào giỏ hàng', {
+            toast.error('Please open the camera and process an image before adding an item to the cart.', {
                 position: "top-center",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -280,7 +280,7 @@ const FruitPaymentSystem = () => {
             }
             setCartCount(cartCount + 1);
 
-            toast.success('Đã thêm vào giỏ hàng', {
+            toast.success('Item added to cart.', {
                 position: "top-center",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -412,7 +412,7 @@ const FruitPaymentSystem = () => {
                 ) : (
                     <>
                         <div id='webcam-container' className='h-5/6 flex justify-center items-center text-md text-slate-400' >
-                            Bấm nút để mở camera
+                            Click the button to open the camera
                         </div>
                         <div className='m-2 '>
                             <button
