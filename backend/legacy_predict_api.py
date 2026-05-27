@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 import tensorflow as tf
 import tensorflow_hub as hub
 import warnings
@@ -11,7 +12,7 @@ warnings.filterwarnings("ignore")
 app = Flask(__name__)
 CORS(app)
 # Load the trained model
-model_path = "client/src/predict/model.h5"
+model_path = Path(__file__).resolve().parents[1] / "legacy" / "model.h5"
 model = tf.keras.models.load_model(model_path, custom_objects={'KerasLayer': hub.KerasLayer})
 
 # List of class names

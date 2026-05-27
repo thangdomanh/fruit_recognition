@@ -1,9 +1,11 @@
+from pathlib import Path
 import serial
 import firebase_admin
 from firebase_admin import credentials, db
 
 # Khởi tạo Firebase (thay đổi YOUR_CREDENTIALS_JSON_FILE_PATH.json thành đường dẫn của tệp chứng chỉ Firebase của bạn)
-cred = credentials.Certificate("C:\\fruit_recognition\\client\\ttiot-6ea8c-firebase-adminsdk-osco6-5f07ac14cd.json")
+BASE_DIR = Path(__file__).resolve().parent
+cred = credentials.Certificate(BASE_DIR / "ttiot-6ea8c-firebase-adminsdk-osco6-5f07ac14cd.json")
 firebase_admin.initialize_app(cred, {"databaseURL": "https://ttiot-6ea8c-default-rtdb.firebaseio.com/"})
 
 # Định nghĩa cổng serial và tốc độ baud
